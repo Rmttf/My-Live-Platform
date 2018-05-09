@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+	
+	<title>校园内网直播</title>
+	
+	<style type="text/css">
+		#danmuarea {
+			position: relative;
+			background: #222;
+			height: 565px;
+		}
+		#room-head-info{
+			width: 100%x; 
+			height: 100px;
+		}
+		#room-player{
+			height: 565px;
+		}
+		.room-chat{
+			height: 565px;
+			overflow-y: auto
+		}
+		#room-foot-box{
+			width: 100%;
+			height: 65;
+		}
+		body{
+			background-image: url(直播背景图.jpg);
+		}
+		p{
+			font-size: 26px;
+			color: #BFC7D3;
+		}
+	</style>
+	
+	<script src="../js/jquery-2.1.4.min.js"></script>
+	<script src="../dist/jquery.danmu.min.js"></script>
+	<link href="../css/video-js.css" rel="stylesheet">
+	<script src="../js/video.js"></script>
+	<link href="../css/bootstrap.min.css" media="screen" rel="stylesheet" type="text/css" />
+	<script src="../js/bootstrap.min.js"></script>
+	<!-- If you'd like to support IE8 -->
+	<script src="../js/videojs-ie8.min.js"></script>
+</head>
+<body>
+	<div class="container">
+		<div id="room-head-info " class="col-md-12" style="padding-left: 0px;padding-top: 160px;" >
+		<h1 id="h1" style="font-family: '楷体'; font-size: 46px; color:#ff0000"  align="center"><strong>英雄联盟内网直播</strong></h1>
+		</div>
+	</div>
+	<div class="container">
+		<div class="row" >
+			<div id="room-player " class="col-md-9">
+				<!--黑背景和弹幕区-->
+				<div id="danmuarea">
+				<div id="danmu">
+					<video id="my-video" class="video-js" controls="controls" preload="auto" width="850px" height="565px" poster="#" data-setup="{}" autoplay="autoplay">
+						<source src="rtmp://10.1.13.66/live/livestream" type='rtmp/flv'>
+			
+						<p class="vjs-no-js">
+							To view this video please enable JavaScript, and consider upgrading to a web browser that
+							<a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+						</p>
+					</video>
+				</div>
+				</div>
+			</div>
+			<div class="room-chat " id="content" class="col-md-3" style="background-color: #3e3470;border-radius:10px; "></div>
+		</div>
+	</div>
+	<div class="container">
+		<div id="room-foot-box" class="col-md-12" style="padding-left: 0px;padding-top: 15px">
+			<!--控制区-->
+			<div class="row">
+			<div class="col-md-9">
+				<div class="btn-group col-md-4">
+				<button class="btn btn-default" type="button" onclick="pauser()">弹幕暂停</button>
+				<button class="btn btn-default" type="button" onclick="resumer() ">弹幕继续</button>
+				
+			</div>
+			<div class="col-md-2 ">
+				<label>显示弹幕:</label>
+				<input type='checkbox' checked='checked' id='ishide' value='is' onchange='changehide()'> 
+				  
+				<!--当前弹幕运行时间(秒)：
+				<span id="time"></span>&nbsp;&nbsp;-->
+				<!--设置当前弹幕时间(秒)： 
+				<input type="text" id="set_time" max=20 /><button type="button"  onclick="settime()">设置</button>-->
+	  			<!--弹幕透明度:
+				<input type="range" name="op" id="op" onchange="op()" value="100"> <br>-->
+				
+				
+			</div>
+				
+				<div class="form-inline col-md-6">
+				<label style="font-size: 20px;">弹幕样式:</label>
+				<select class="form-control" name="color" id="color">
+						<option value="white">白色</option>
+						<option value="red">红色</option>
+						<option value="green">绿色</option>
+						<option value="blue">蓝色</option>
+						<option value="yellow">黄色</option>
+				</select>
+					<select class="form-control" name="size" id="text_size">
+						<option value="1">大文字</option>
+						<option value="0">小文字</option>
+					</select>
+					<select class="form-control" name="position" id="position">
+						<option value="0">滚动</option>
+						<option value="1">顶端</option>
+						<option value="2">底端</option>
+					</select>
+				</div>
+			</div>
+			
+				<div class="form-inline col-md-3">
+				<input class="form-control" type="textarea" id="text" max=300 />
+				<button class="btn btn-default" type="button" onclick="sendMessage();send();clear()">发送</button>
+				</div>	
+				
+				
+			</div>
+		</div>
+	</div>
+	
+	
+	
+		<!--弹幕WebSocket-->
+		<script>
+			var wsServer = 'ws://10.1.13.66:9505';
+			var websocket = new WebSocket(wsServer);
+
+			websocket.onopen = function(evt) {
+				console.log("Connected to WebSocket server.");
+				/*websocket.send("gaga");*/
+				//连上之后就打开弹幕
+				$('#danmu').danmu('danmuResume');
+			};
+
+			websocket.onclose = function(evt) {
+				console.log("Disconnected");
+			};
+
+			websocket.onmessage = function(evt) {
+				console.log('Retrieved data from server: ' + evt.data);
+				var time = $('#danmu').data("nowTime") + 1;
+				var text_obj = evt.data + ',"time":' + time + '}'; //获取加上当前时间
+				console.log(text_obj);
+				var new_obj = eval('(' + text_obj + ')');
+				$('#danmu').danmu("addDanmu", new_obj); //添加弹幕
+			};
+
+			websocket.onerror = function(evt, e) {
+				console.log('Error occured: ' + evt.data);
+			};
+
+			//初始化
+			$("#danmu").danmu({
+				left: 0,
+				top: 0,
+				height: "100%",
+				width: "100%",
+				speed: 20000,
+				opacity: 1,
+				font_size_small: 16,
+				font_size_big: 24,
+				top_botton_danmu_time: 6000
+			});
+			//一个定时器，监视弹幕时间并更新到页面上
+			function timedCount() {
+				$("#time").text($('#danmu').data("nowTime"));
+
+				t = setTimeout("timedCount()", 50)
+
+			}
+			timedCount();
+
+			function starter() {
+				$('#danmu').danmu('danmuStart');
+			}
+
+			function pauser() {
+				$('#danmu').danmu('danmuPause');
+			}
+
+			function resumer() {
+				$('#danmu').danmu('danmuResume');
+			}
+
+			function stoper() {
+				$('#danmu').danmu('danmuStop');
+			}
+
+			function getime() {
+				alert($('#danmu').data("nowTime"));
+			}
+
+			function getpaused() {
+				alert($('#danmu').data("paused"));
+			}
+
+			//发送弹幕，使用了文档README.md第7节中推荐的方法
+			function send() {
+				var text = document.getElementById('text').value;
+				var color = document.getElementById('color').value;
+				var position = document.getElementById('position').value;
+				//var time = $('#danmu').data("nowTime")+1;
+				var size = document.getElementById('text_size').value;
+				//var text_obj='{ "text":"'+text+'","color":"'+color+'","size":"'+size+'","position":"'+position+'","time":'+time+'}';
+				//为了处理简单，方便后续加time，和isnew，就先酱紫发一半吧。
+				//注：time为弹幕出来的时间，isnew为是否加边框，自己发的弹幕，常理上来说是有边框的。
+				var text_obj = '{ "text":"' + text + '","color":"' + color + '","size":"' + size + '","position":"' + position + '"';
+				//利用websocket发送
+				websocket.send(text_obj);
+				//清空相应的内容
+				document.getElementById('text').value = '';
+			}
+			//调整透明度函数
+			function op() {
+//透明度				var op = document.getElementById('op').value;
+				var op = 100;
+				$('#danmu').danmu("setOpacity", op / 100);
+			}
+
+			//调隐藏 显示
+			function changehide() {
+//透明度				var op = document.getElementById('op').value;
+				var op = 100;
+				op = op / 100;
+				if(document.getElementById("ishide").checked) {
+					$("#danmu").danmu("setOpacity", 1)
+				} else {
+					$("#danmu").danmu("setOpacity", 0)
+
+				}
+			}
+
+			//设置弹幕时间
+			function settime() {
+				var t = document.getElementById("set_time").value;
+				t = parseInt(t)
+				$('#danmu').danmu("setTime", t);
+			}
+		</script>
+		
+		<!--聊天室websocket-->
+		<script type="text/javascript" charset="utf-8" >
+	        if(window.WebSocket){
+	              var webSocket = new WebSocket("ws://10.1.13.66:9506");
+	              webSocket.onopen = function (event) {
+	              };
+	              webSocket.onmessage = function (event) {
+	                var content = document.getElementById('content');
+	                content.innerHTML = content.innerHTML.concat('<p >游客id-'+event.data+'</p>');
+	                content.scrollTop = content.scrollHeight;
+	              }
+	              var sendMessage = function(){
+	                  var data = document.getElementById('text').value;
+	                  webSocket.send(data);
+	              }
+	          }else{
+	              console.log("浏览器不支持WebSocket");
+	          }
+    	</script>
+		<script type="text/javascript">
+			function clear(){
+				document.getElementById("message").value = "";
+			}
+		</script>
+		
+		<!--<script type="text/javascript">
+			function large(){
+				var l=document.getElementById("content");
+				l.style.fontSize="60px";
+			}
+		</script>-->
+</body>
+</html>
