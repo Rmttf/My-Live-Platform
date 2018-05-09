@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<title>基于php swoole扩展写的超简单聊天室</title>
+		<script type="text/javascript" charset="utf-8">
+			if(window.WebSocket) {
+				var webSocket = new WebSocket("ws://10.1.13.66:9506");
+				webSocket.onopen = function(event) {};
+				webSocket.onmessage = function(event) {
+					var content = document.getElementById('content');
+					content.innerHTML = content.innerHTML.concat('<p >游客id-' + event.data + '</p>');
+					content.scrollTop = content.scrollHeight;
+				}
+				var sendMessage = function() {
+					var data = document.getElementById('message').value;
+					webSocket.send(data);
+				}
+			} else {
+				console.log("浏览器不支持WebSocket");
+			}
+		</script>
+		<script type="text/javascript">
+			function clear(){
+				document.getElementById("message").value = "";
+			}
+		</script>
+		<style>
+			p {
+				margin-left: 20px;
+				height: 8px;
+				line-height: 20px;
+			}
+			
+			#title {
+				text-align: center;
+				margin-bottom: 10px;
+			}
+			
+			#room {
+				width: 600px;
+				border: 1px solid #ccc;
+				margin: 0 auto;
+			}
+			
+			#content {
+				overflow-y: auto;
+				height: 300px;
+				border: 1px solid #ccc;
+			}
+			
+			#talk {
+				height: 40px;
+				margin-top: 10px
+			}
+			
+			#message {
+				margin-left: 10px;
+				height: 25px;
+				width: 450px;
+			}
+			
+			#sendButton {
+				margin-left: 20px;
+				height: 30;
+				width: 70px;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="title">基于php swoole扩展写的超简单聊天室</div>
+		<div id="room">
+			<div id="content"></div>
+			<div id="talk">
+				<input type="text" id="message" placeholder="说点什么吧...">
+				<button type="reset" id="sendButton" onclick="sendMessage();clear()">发送</button>
+			</div>
+		</div>
+	</body>
+
+</html>
